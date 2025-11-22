@@ -26,24 +26,24 @@ If your plugin does not need CSS, delete this file.
 	flex: 1;
 }
 
-.song-img {
+.track-img {
 	border-radius: 8px;
 }
 
-.song-container {
+.track-container {
 	display: flex;
 	gap: 15px;
 	margin: 5px 0px;
 }
 
-.song-text-container {
+.track-text-container {
 	display: flex;
 	flex-flow: column;
 	justify-content: space-between;
 	padding: 3px
 }
 
-.song-title {
+.track-title {
 	font-size: larger;
 }
 

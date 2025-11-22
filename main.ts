@@ -36,11 +36,12 @@ export default class SpotifyLogger extends Plugin {
 					new SpotifyLogModal(
 						this.app,
 						currentlyPlaying,
-						async (result: string) => {
+						this.settings.spotifyLoggerFolderPath,
+						async (input: string) => {
 							await logSong(
 								this.app,
 								this.settings.spotifyLoggerFolderPath,
-								result,
+								input,
 								currentlyPlaying,
 							);
 						},
@@ -74,7 +75,7 @@ export default class SpotifyLogger extends Plugin {
 					new Notice("Please connect your Spotify account", 3000);
 					return;
 				}
-				new SpotifySearchModal(this.app).open();
+				new SpotifySearchModal(this.app).open(); //TODO: REMOVE THIS OR ADD THE SECOND PARAM
 			},
 		});
 

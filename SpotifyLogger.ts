@@ -1,10 +1,10 @@
 import { processCurrentlyPlayingResponse } from "api";
 import { App, normalizePath, moment } from "obsidian";
+import { PlaybackState, TrackFormatted, TrackItem } from "types";
 import { formatMs } from "utils";
 
-const formatInput = (input: String, progressMs: string) => {
+const formatInput = (input: String, progress: string) => {
 	const date = moment().format("D MMM YYYY, h:mma");
-	const progress = formatMs(progressMs);
 	const surroundChar = "**";
 	const formattedinput = `${surroundChar}${date}${surroundChar}
 
@@ -21,14 +21,14 @@ const appendInput = async (
 	app: App,
 	filePath: string,
 	input: string,
-	progressMs: string,
+	progress: string,
 ) => {
 	const file = app.vault.getFileByPath(filePath);
 	if (!file) {
 		console.log(`Error: file ${filePath} could not be found`);
 		return;
 	}
-	const formattedinput = formatInput(input, progressMs);
+	const formattedinput = formatInput(input, progress);
 	app.vault.append(file, formattedinput);
 
 	// const view = app.workspace.getActiveViewOfType(MarkdownView);
@@ -47,13 +47,11 @@ const appendInput = async (
 export const createSongFile = async (
 	app: App,
 	folderPath: string,
-	currentlyPlaying,
+	track: TrackFormatted,
 ) => {
-	const songInfo = processCurrentlyPlayingResponse(currentlyPlaying);
+	const filePath = normalizePath(folderPath + "/" + track.id + ".md");
 
 	// check if file exists
-	const filePath = normalizePath(folderPath + "/" + songInfo.id + ".md");
-
 	let file = app.vault.getFileByPath(filePath);
 
 	if (!file) {
@@ -63,12 +61,12 @@ export const createSongFile = async (
 		 */
 		try {
 			app.fileManager.processFrontMatter(file, (frontmatter) => {
-				frontmatter["title"] = songInfo.name; // TODO: let user change which frontmatter should reflect display title?
-				frontmatter["artists"] = songInfo.artists;
-				frontmatter["album"] = songInfo.album;
-				frontmatter["duration"] = songInfo.duration;
+				frontmatter["title"] = track.name; // TODO: let user change which frontmatter should reflect display title?
+				frontmatter["artists"] = track.artists;
+				frontmatter["album"] = track.album;
+				frontmatter["duration"] = track.duration;
 				// frontmatter["log count"] = 1;
-				frontmatter["aliases"] = songInfo.name;
+				frontmatter["aliases"] = track.name;
 			});
 		} catch (e) {
 			console.log(`Error: ${e}`);
@@ -92,19 +90,29 @@ export const logSong = async (
 	app: App,
 	folderPath: string,
 	input: string,
-	currentlyPlaying,
+	currentlyPlaying: PlaybackState,
 ) => {
-	const progressMs = currentlyPlaying.progress_ms;
+	const track = processCurrentlyPlayingResponse(currentlyPlaying);
 
-	const file = await createSongFile(app, folderPath, currentlyPlaying);
+	if (!track) {
+		console.log("error processing playback state");
+		return null;
+	}
+
+	if (!track.progress) {
+		console.log("no track progress?");
+		track.progress = ""; //TODO: handle no progress (not currently playing)
+	}
+
+	const file = await createSongFile(app, folderPath, track);
 	const filePath = file.path;
 
-	await appendInput(app, filePath, input, progressMs);
+	await appendInput(app, filePath, input, track.progress);
 
 	// if file is currently active, don't open file
 	const activeFile = app.workspace.getActiveFile();
 
 	if (!activeFile || activeFile.path != filePath) {
-		await app.workspace.getLeaf().openFile(file);
+		await app.workspace.getLeaf().openFile(file); //TODO: move this to different file?
 	}
 };

@@ -1,17 +1,42 @@
-import { processCurrentlyPlayingResponse } from "api";
-import { App, ButtonComponent, Modal, Setting, TextComponent } from "obsidian";
+import {
+	processCurrentlyPlayingResponse,
+	isAuthenticated,
+	processTrack,
+} from "api";
+import {
+	App,
+	ButtonComponent,
+	Modal,
+	Setting,
+	TextComponent,
+	Notice,
+	SearchComponent,
+} from "obsidian";
+import { createSongFile } from "SpotifyLogger";
+import { SpotifySearchModal } from "SpotifySearchModal";
+import { PlaybackState, Song, Track, TrackFormatted } from "types";
 
 export class SpotifyLogModal extends Modal {
+	readonly onChooseSuggestionCb = async (track: TrackFormatted) => {
+		console.log("searching from log modal");
+		const songFile = await createSongFile(this.app, this.folderPath, track);
+	};
+
 	constructor(
-		app: App,
-		currentlyPlaying,
-		onSubmit: (result: string) => void,
+		public app: App,
+		readonly currentlyPlaying: PlaybackState,
+		readonly folderPath: string,
+		readonly onSubmit: (result: string) => void,
 	) {
 		super(app);
 
-		const songInfo = processCurrentlyPlayingResponse(currentlyPlaying);
+		const track = processCurrentlyPlayingResponse(this.currentlyPlaying);
+		if (!track) {
+			console.log("is episode"); //TODO: Handle episode
+			return;
+		}
 
-		const title = `${songInfo.artists} - ${songInfo.name}`;
+		const title = `${track.artists} - ${track.name}`;
 		this.setTitle(title);
 
 		let input = "";
@@ -24,17 +49,17 @@ export class SpotifyLogModal extends Modal {
 		textComponent.inputEl.addEventListener("keydown", (event) => {
 			if (!event.isComposing && event.key === "Enter") {
 				event.preventDefault();
-				onSubmit(input);
+				this.onSubmit(input);
 				this.close();
 			}
 		});
+
 		textComponent.onChange((value) => {
-			console.log(input);
 			input = value;
 		});
 
 		this.contentEl.createEl("div", {
-			text: songInfo.progress,
+			text: track.progress,
 			cls: "spotify-log-modal-progress",
 		});
 
@@ -45,14 +70,21 @@ export class SpotifyLogModal extends Modal {
 		const searchButton = new ButtonComponent(buttonContainer)
 			.setButtonText("Search song")
 			.onClick(() => {
-				console.log("searching");
+				if (!isAuthenticated()) {
+					new Notice("Please connect your Spotify account", 3000);
+					return;
+				}
+				new SpotifySearchModal(
+					this.app,
+					this.onChooseSuggestionCb,
+				).open();
 			});
 
 		const saveButton = new ButtonComponent(buttonContainer)
 			.setButtonText("Save")
 			.setCta()
 			.onClick(() => {
-				onSubmit(input);
+				this.onSubmit(input);
 				this.close();
 			});
 	}
