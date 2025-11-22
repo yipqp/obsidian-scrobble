@@ -1,6 +1,7 @@
 // pkce reference: https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow
 
 import { Notice, ObsidianProtocolData } from "obsidian";
+import { PlaybackState, Track, TrackItem, TrackFormatted } from "types";
 import { URLSearchParams } from "url";
 import { generateRandomString, sha256, base64encode, formatMs } from "utils";
 
@@ -222,17 +223,27 @@ export const searchTrack = async (query: string) => {
 	return data;
 };
 
+export const processCurrentlyPlayingResponse = (
+	playbackState: PlaybackState,
+) => {
+	if (playbackState.item.kind === "episode") {
+		return null;
+	}
+	const trackInfo = processTrack(playbackState.item);
+	trackInfo.progress = formatMs(playbackState.progress_ms.toString());
+	return trackInfo;
+};
+
 // returns object with relevant information about the playing track
-export const processCurrentlyPlayingResponse = (res) => {
-	const song = res.item;
-	const songInfo = {
-		album: song.album.name,
-		albumid: song.album.id,
-		artists: song.artists.map((artist) => artist.name).join(", "),
-		id: song.id,
-		name: song.name,
-		duration: formatMs(song.duration_ms),
-		progress: formatMs(res.progress_ms),
+export const processTrack = (track: Track) => {
+	const songInfo: TrackFormatted = {
+		album: track.album.name,
+		albumid: track.album.id,
+		artists: track.artists.map((artist) => artist.name).join(", "),
+		id: track.id,
+		name: track.name,
+		image: track.album.images[track.album.images.length - 1],
+		duration: formatMs(track.duration_ms.toString()),
 	};
 	return songInfo;
 };
