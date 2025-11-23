@@ -112,15 +112,24 @@ export class SpotifyLogModal extends Modal {
 			);
 		};
 
+		const openSearchModal = () => {
+			if (!isAuthenticated()) {
+				new Notice("Please connect your Spotify account", 3000);
+				return;
+			}
+			new SpotifySearchModal(this.app, onChooseSuggestionCb).open();
+		};
+
+		this.modalEl.addEventListener("keydown", (e) => {
+			if (e.metaKey && e.key === "p") {
+				e.preventDefault();
+				openSearchModal();
+			}
+		});
+
 		const searchButton = new ButtonComponent(buttonContainer)
 			.setButtonText("Search song")
-			.onClick(() => {
-				if (!isAuthenticated()) {
-					new Notice("Please connect your Spotify account", 3000);
-					return;
-				}
-				new SpotifySearchModal(this.app, onChooseSuggestionCb).open();
-			});
+			.onClick(openSearchModal);
 
 		const saveButton = new ButtonComponent(buttonContainer)
 			.setButtonText("Save")
