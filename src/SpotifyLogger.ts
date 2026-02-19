@@ -88,6 +88,7 @@ export const createPlayingFile = async (
 				frontmatter["type"] = playing.type;
 				frontmatter["album"] = playing.album;
 				frontmatter["duration"] = playing.duration;
+				frontmatter["tags"] = ""; //TODO: allow user to enable / disable which frontmatter shows up
 				frontmatter["aliases"] = playing.name;
 			});
 		}
@@ -99,6 +100,7 @@ export const createPlayingFile = async (
 				frontmatter["release date"] = playing.releaseDate;
 				frontmatter["duration"] = playing.duration;
 				frontmatter["tracks"] = tracksAsWikilinks(playing.tracks);
+				frontmatter["tags"] = "";
 				frontmatter["aliases"] = playing.name;
 			});
 		}
