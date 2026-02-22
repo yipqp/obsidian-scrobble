@@ -1,4 +1,4 @@
-import { App, moment, normalizePath, TFile } from "obsidian";
+import { App, normalizePath, TFile } from "obsidian";
 import { AlbumFormatted, SimplifiedTrack, TrackFormatted } from "types";
 
 export const generateRandomString = (length: number) => {
@@ -21,18 +21,21 @@ export const base64encode = (input: ArrayBuffer) => {
 		.replace(/\//g, "_");
 };
 
-export const formatMs = (ms: string) => {
-	const msInt = parseInt(ms);
-	let msFormatted;
+export const formatMs = (ms: number) => {
+	const totalSeconds = Math.floor(ms / 1000);
 
-	// song is >= 1 hour
-	if (msInt >= 3600000) {
-		msFormatted = moment.utc(msInt).format("HH:mm:ss");
-	} else {
-		msFormatted = moment.utc(msInt).format("mm:ss");
+	const hours = Math.floor(totalSeconds / 3600);
+	const minutes = Math.floor((totalSeconds % 3600) / 60);
+	const seconds = totalSeconds % 60;
+
+	const paddedSeconds = seconds.toString().padStart(2, "0");
+
+	if (hours >= 1) {
+		const paddedMinutes = minutes.toString().padStart(2, "0");
+		return `${hours}:${paddedMinutes}:${paddedSeconds}`;
 	}
 
-	return msFormatted;
+	return `${minutes}:${paddedSeconds}`;
 };
 
 export const generateBlockID = (idLen: number): string => {
