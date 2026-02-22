@@ -299,7 +299,7 @@ export const processCurrentlyPlayingResponse = async (
 	}
 	if (type === "Track") {
 		const trackInfo = processTrack(playbackState.item);
-		trackInfo.progress = formatMs(playbackState.progress_ms.toString());
+		trackInfo.progress = formatMs(playbackState.progress_ms);
 		return trackInfo;
 	}
 	if (type === "Album") {
@@ -323,7 +323,7 @@ const getAlbumLength = (album: Album) => {
 	for (const track of album.tracks.items) {
 		length += track.duration_ms;
 	}
-	return formatMs(length.toString());
+	return formatMs(length);
 };
 
 // returns object with relevant information about the playing track
@@ -336,7 +336,7 @@ export const processTrack = (track: TrackLike): TrackFormatted => {
 		id: track.id,
 		name: track.name,
 		image: track.album.images[track.album.images.length - 1],
-		duration: formatMs(track.duration_ms.toString()),
+		duration: formatMs(track.duration_ms),
 	};
 };
 

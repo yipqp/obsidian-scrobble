@@ -105,7 +105,7 @@ export class SettingTab extends PluginSettingTab {
 						this.display();
 					}),
 			)
-			.setDesc(`Insert "release date" property, e.g. 8/30/2011 or 2001`);
+			.setDesc(`Insert "release date" property, e.g. 08/30/2011 or 2001`);
 
 		new Setting(containerEl)
 			.setName("Tags")
