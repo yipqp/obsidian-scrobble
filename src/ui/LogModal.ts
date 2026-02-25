@@ -1,4 +1,4 @@
-import { isAuthenticated, nowPlayingAsString } from "src/api";
+import { isAuthenticated } from "src/api";
 import {
 	App,
 	ButtonComponent,
@@ -14,13 +14,17 @@ import {
 	createTrackFile,
 } from "src/SpotifyLogger";
 import { AlbumFormatted, TrackFormatted } from "types";
-import { generateBlockID, parsePlayingAsWikilink } from "src/utils";
-import { SpotifySearchModal } from "./SpotifySearchModal";
-import { defaultSettings } from "src/settings";
+import {
+	generateBlockID,
+	nowPlayingAsString,
+	parsePlayingAsWikilink,
+} from "src/utils";
+import { SearchModal } from "./SearchModal";
+import { obsidianfmDefaultSettings } from "src/settings";
 
-export class SpotifyLogModal extends Modal {
+export class LogModal extends Modal {
 	public app: App;
-	private settings: defaultSettings;
+	private settings: obsidianfmDefaultSettings;
 	private folderPath: string;
 	private onSubmit: (input: string, blockId?: string) => void;
 	private blockId: string | null;
@@ -40,8 +44,6 @@ export class SpotifyLogModal extends Modal {
 			new Notice("Error: cannot reference self");
 			return;
 		}
-
-		console.log("searching from log modal");
 
 		let file: TFile;
 
@@ -84,7 +86,7 @@ export class SpotifyLogModal extends Modal {
 	};
 	constructor(
 		app: App,
-		settings: defaultSettings,
+		settings: obsidianfmDefaultSettings,
 		currentlyPlaying: TrackFormatted | AlbumFormatted,
 		onSubmit: (input: string, blockId?: string) => void,
 	) {
@@ -96,8 +98,7 @@ export class SpotifyLogModal extends Modal {
 		this.onSubmit = onSubmit;
 
 		if (!this.playing) {
-			console.log("is episode"); //TODO: Handle episode
-			return;
+			throw new Error("current track not supported");
 		}
 
 		const folder = this.app.vault.getFolderByPath(
@@ -148,7 +149,7 @@ export class SpotifyLogModal extends Modal {
 				new Notice("Please connect your Spotify account", 3000);
 				return;
 			}
-			new SpotifySearchModal(
+			new SearchModal(
 				this.app,
 				this.playing!.type,
 				onChooseSuggestionCb,

@@ -1,8 +1,13 @@
 import { App, moment, TFile } from "obsidian";
 import { AlbumFormatted, TrackFormatted } from "types";
 import { tracksAsWikilinks } from "./api";
-import { defaultSettings } from "./settings";
-import { getFile, getFilePath, parsePlayingAsWikilink } from "./utils";
+import { obsidianfmDefaultSettings } from "./settings";
+import {
+	getFile,
+	getFilePath,
+	parsePlayingAsWikilink,
+	showError,
+} from "./utils";
 
 const formatInput = (
 	input: String,
@@ -51,8 +56,7 @@ export const appendInput = async (
 ) => {
 	const file = app.vault.getFileByPath(filePath);
 	if (!file) {
-		console.log(`Error: file ${filePath} could not be found`);
-		return;
+		throw new Error(`file ${filePath} could not be found`);
 	}
 	let formattedinput = "";
 	if (progress) {
@@ -102,7 +106,7 @@ export const updateAlbumFrontmatter = (
 // create new album file in folder path if not exist, and return it
 export const createAlbumFile = async (
 	app: App,
-	settings: defaultSettings,
+	settings: obsidianfmDefaultSettings,
 	playing: AlbumFormatted,
 ) => {
 	const {
@@ -145,7 +149,7 @@ export const createAlbumFile = async (
 			frontmatter["aliases"] = playing.name;
 		});
 	} catch (e) {
-		console.log(`Error: ${e}`);
+		showError(e);
 	}
 
 	return file;
@@ -154,7 +158,7 @@ export const createAlbumFile = async (
 // create new track file in folder path if not exist, and return it
 export const createTrackFile = async (
 	app: App,
-	settings: defaultSettings,
+	settings: obsidianfmDefaultSettings,
 	playing: TrackFormatted,
 ) => {
 	const { folderPath, showTags, showType, showDuration } = settings;
@@ -178,7 +182,7 @@ export const createTrackFile = async (
 
 	try {
 		app.fileManager.processFrontMatter(file, (frontmatter) => {
-			frontmatter["title"] = playing.name; // TODO: let user change which frontmatter should reflect display title?
+			frontmatter["title"] = playing.name;
 			frontmatter["artists"] = playing.artists;
 			showType && (frontmatter["type"] = playing.type);
 			frontmatter["album"] = albumWikilink || playing.album;
@@ -187,7 +191,7 @@ export const createTrackFile = async (
 			frontmatter["aliases"] = playing.name;
 		});
 	} catch (e) {
-		console.log(`Error: ${e}`);
+		showError(e);
 	}
 
 	return file;
@@ -195,14 +199,13 @@ export const createTrackFile = async (
 
 export const logPlaying = async (
 	app: App,
-	settings: defaultSettings,
+	settings: obsidianfmDefaultSettings,
 	input: string,
 	playing: TrackFormatted | AlbumFormatted | undefined,
 	blockId?: string,
 ) => {
 	if (!playing) {
-		console.log("error processing playback state");
-		return null;
+		throw new Error("playback state not supported");
 	}
 
 	const { logAlbumAlwaysCreateNewTrackFiles } = settings;
@@ -233,7 +236,7 @@ export const logPlaying = async (
 	const activeFile = app.workspace.getActiveFile();
 
 	if (!activeFile || activeFile.path != filePath) {
-		await app.workspace.getLeaf().openFile(file!); //TODO: move this to different file?
+		await app.workspace.getLeaf().openFile(file!);
 	}
 
 	const editor = app.workspace.activeEditor?.editor;

@@ -1,6 +1,6 @@
 {
-	"id": "obsidian-spotify-logger",
-	"name": "Obsidian Spotify Logger",
+	"id": "obsidian-fm",
+	"name": "obsidian.fm",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Log songs with Spotify API",

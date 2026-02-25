@@ -1,5 +1,10 @@
-import { App, normalizePath, TFile } from "obsidian";
-import { AlbumFormatted, SimplifiedTrack, TrackFormatted } from "types";
+import { App, normalizePath, Notice, TFile } from "obsidian";
+import {
+	AlbumFormatted,
+	MinimalItem,
+	SimplifiedTrack,
+	TrackFormatted,
+} from "types";
 
 export const generateRandomString = (length: number) => {
 	const possible =
@@ -38,6 +43,7 @@ export const formatMs = (ms: number) => {
 	return `${minutes}:${paddedSeconds}`;
 };
 
+// obsidian's unique block id generation isn't exposed in api as of late 2025
 export const generateBlockID = (idLen: number): string => {
 	const chars =
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -51,7 +57,7 @@ export const generateBlockID = (idLen: number): string => {
 };
 
 export const parsePlayingAsWikilink = (
-	playing: TrackFormatted | AlbumFormatted | SimplifiedTrack, //TODO: change type for trackformatted ?
+	playing: MinimalItem | SimplifiedTrack,
 	embedLinkedContent?: boolean,
 	blockId?: string,
 ): string => {
@@ -77,4 +83,15 @@ export const getFile = (
 	}
 
 	return null;
+};
+
+export const nowPlayingAsString = (
+	playing: AlbumFormatted | TrackFormatted,
+) => {
+	return `${playing.artists} - ${playing.name}`;
+};
+
+export const showError = (err: string) => {
+	const message = `[obsidian.fm] Error: ${err}`;
+	new Notice(`${message}`, 3000);
 };
