@@ -1,3 +1,6 @@
+// https://github.com/spotify/spotify-web-api-ts-sdk/blob/main/src/types.ts
+
+// start of types by me
 export type PlayingType = "Track" | "Album";
 export type PlayingTypeFormatted = TrackFormatted | AlbumFormatted;
 
@@ -40,8 +43,11 @@ export type TrackLike = Pick<
 > & {
 	album: Pick<Track["album"], "name" | "id" | "images">;
 };
+
+// end of types by me
+// everything below provided by https://github.com/spotify/spotify-web-api-ts-sdk/blob/main/src/types.ts
+
 // Configuration types
-// https://github.com/spotify/spotify-web-api-ts-sdk/blob/main/src/types.ts
 
 export type RequestImplementation = (
 	input: RequestInfo | URL,

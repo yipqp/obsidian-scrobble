@@ -1,7 +1,7 @@
 import { Notice } from "obsidian";
-import { SpotifyLogModal } from "./ui/SpotifyLogModal";
+import { LogModal } from "./ui/LogModal";
 import { logPlaying } from "src/SpotifyLogger";
-import { SpotifySearchModal } from "./ui/SpotifySearchModal";
+import { SearchModal } from "./ui/SearchModal";
 import {
 	getAuthUrl,
 	getCurrentlyPlayingTrack,
@@ -10,14 +10,25 @@ import {
 	processCurrentlyPlayingResponse,
 	processRecentlyPlayed,
 } from "./api";
-import SpotifyLogger from "./main";
 import { PlayingTypeFormatted, PlayingType } from "types";
 import { RecentSongsModal } from "./ui/RecentSongsModal";
+import { showError } from "./utils";
+import ObsidianFM from "./main";
 
-export function registerCommands(plugin: SpotifyLogger) {
-	const searchItemCb = async (item: PlayingTypeFormatted) => {
+export function registerCommands(plugin: ObsidianFM) {
+	const requireAuth = (fn: () => Promise<void>): (() => Promise<void>) => {
+		return async () => {
+			if (!isAuthenticated()) {
+				new Notice("Please connect your Spotify account", 3000);
+				return;
+			}
+			await fn();
+		};
+	};
+
+	const logSearchedSong = async (item: PlayingTypeFormatted) => {
 		try {
-			new SpotifyLogModal(
+			new LogModal(
 				plugin.app,
 				plugin.settings,
 				item,
@@ -32,8 +43,7 @@ export function registerCommands(plugin: SpotifyLogger) {
 				},
 			).open();
 		} catch (err) {
-			const message = `[Spotify Logger] Error: ${err.message}`;
-			new Notice(`${message}`, 3000);
+			showError(err);
 		}
 	};
 
@@ -44,7 +54,7 @@ export function registerCommands(plugin: SpotifyLogger) {
 				currentlyPlayingJson,
 				playingType,
 			)) as PlayingTypeFormatted;
-			new SpotifyLogModal(
+			new LogModal(
 				plugin.app,
 				plugin.settings,
 				currentlyPlaying,
@@ -59,25 +69,24 @@ export function registerCommands(plugin: SpotifyLogger) {
 				},
 			).open();
 		} catch (err) {
-			const message = `[Spotify Logger] Error: ${err.message}`;
-			new Notice(`${message}`, 3000);
+			showError(err);
 		}
 	};
 
 	plugin.addCommand({
 		id: "log-currently-playing-track",
 		name: "Log currently playing track",
-		callback: async () => {
+		callback: requireAuth(async () => {
 			await logCurrentlyPlayingCb("Track");
-		},
+		}),
 	});
 
 	plugin.addCommand({
 		id: "log-currently-playing-album",
 		name: "Log currently playing album",
-		callback: async () => {
+		callback: requireAuth(async () => {
 			await logCurrentlyPlayingCb("Album");
-		},
+		}),
 	});
 
 	plugin.addCommand({
@@ -85,11 +94,6 @@ export function registerCommands(plugin: SpotifyLogger) {
 		name: "Connect Spotify",
 		callback: async () => {
 			const authUrl = await getAuthUrl();
-			if (!authUrl) {
-				// do something
-				console.log("Error: auth url missing?");
-				return;
-			}
 			window.open(authUrl);
 		},
 	});
@@ -97,43 +101,31 @@ export function registerCommands(plugin: SpotifyLogger) {
 	plugin.addCommand({
 		id: "search-track",
 		name: "Search track",
-		callback: async () => {
-			if (!isAuthenticated()) {
-				new Notice("Please connect your Spotify account", 3000);
-				return;
-			}
-			new SpotifySearchModal(plugin.app, "Track", searchItemCb).open();
-		},
+		callback: requireAuth(async () => {
+			new SearchModal(plugin.app, "Track", logSearchedSong).open();
+		}),
 	});
 
 	plugin.addCommand({
 		id: "search-album",
 		name: "Search album",
-		callback: async () => {
-			if (!isAuthenticated()) {
-				new Notice("Please connect your Spotify account", 3000);
-				return;
-			}
-			new SpotifySearchModal(plugin.app, "Album", searchItemCb).open();
-		},
+		callback: requireAuth(async () => {
+			new SearchModal(plugin.app, "Album", logSearchedSong).open();
+		}),
 	});
 
 	plugin.addCommand({
 		id: "recent-songs",
 		name: "Recent Songs",
-		callback: async () => {
-			if (!isAuthenticated()) {
-				new Notice("Please connect your Spotify account", 3000);
-				return;
-			}
+		callback: requireAuth(async () => {
 			const recentlyPlayed = await getRecentlyPlayed();
 			const recentlyPlayedFormatted =
 				processRecentlyPlayed(recentlyPlayed);
 			new RecentSongsModal(
 				plugin.app,
 				recentlyPlayedFormatted,
-				searchItemCb,
+				logSearchedSong,
 			).open();
-		},
+		}),
 	});
 }

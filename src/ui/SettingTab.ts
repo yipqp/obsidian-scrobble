@@ -1,12 +1,12 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import { FolderSuggest } from "src/ui/FolderSuggest";
 import { getAuthUrl } from "src/api";
-import SpotifyLogger from "src/main";
+import ObsidianFM from "src/main";
 
 export class SettingTab extends PluginSettingTab {
-	plugin: SpotifyLogger;
+	plugin: ObsidianFM;
 
-	constructor(app: App, plugin: SpotifyLogger) {
+	constructor(app: App, plugin: ObsidianFM) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}

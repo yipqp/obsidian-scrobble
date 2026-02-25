@@ -1,11 +1,14 @@
 import { Plugin } from "obsidian";
 import { handleAuth } from "src/api";
-import { DEFAULT_SETTINGS, defaultSettings } from "./settings";
+import {
+	OBSIDIANFM_DEFAULT_SETTINGS,
+	obsidianfmDefaultSettings,
+} from "./settings";
 import { registerCommands } from "./commands";
 import { SettingTab } from "./ui/SettingTab";
 
-export default class SpotifyLogger extends Plugin {
-	settings: defaultSettings;
+export default class ObsidianFM extends Plugin {
+	settings: obsidianfmDefaultSettings;
 
 	async onload() {
 		await this.loadSettings();
@@ -21,8 +24,8 @@ export default class SpotifyLogger extends Plugin {
 	async loadSettings() {
 		this.settings = Object.assign(
 			{},
-			DEFAULT_SETTINGS,
-			await this.loadData()
+			OBSIDIANFM_DEFAULT_SETTINGS,
+			await this.loadData(),
 		);
 	}
 

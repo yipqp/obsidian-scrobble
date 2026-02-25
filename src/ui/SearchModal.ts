@@ -15,7 +15,7 @@ import {
 	MinimalItem,
 } from "types";
 
-export class SpotifySearchModal extends SuggestModal<MinimalItem> {
+export class SearchModal extends SuggestModal<MinimalItem> {
 	isLoading: boolean;
 	lastQuery: string;
 	searchDebouncer: Debouncer<
@@ -43,12 +43,9 @@ export class SpotifySearchModal extends SuggestModal<MinimalItem> {
 
 				this.lastQuery = query;
 
-				console.log("calling search api");
-
 				const data = await searchItem(query, this.type);
 
 				if (!data) {
-					console.log("no data");
 					return Promise.resolve([]);
 				}
 
@@ -65,7 +62,6 @@ export class SpotifySearchModal extends SuggestModal<MinimalItem> {
 					);
 				}
 
-				// console.log(JSON.stringify(itemsFormatted, null, 2));
 				this.isLoading = false;
 				cb(itemsFormatted);
 			},
@@ -110,9 +106,7 @@ export class SpotifySearchModal extends SuggestModal<MinimalItem> {
 
 		if (item.type === "Album") {
 			if (!item.href) {
-				new Notice("Album item missing href"); // shouldn't reach here.
-				//TODO: refactor types to explicitly state that an album under MinimalItem will have an href?
-				return;
+				throw new Error("album href missing");
 			}
 			const fetchedAlbum = await callEndpoint(item.href);
 			resolved = processAlbum(fetchedAlbum) as AlbumFormatted;

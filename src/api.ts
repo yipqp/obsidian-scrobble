@@ -1,6 +1,6 @@
 // pkce reference: https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow
 
-import { App, Notice, ObsidianProtocolData } from "obsidian";
+import { App, ObsidianProtocolData } from "obsidian";
 import {
 	Album,
 	AlbumFormatted,
@@ -23,21 +23,21 @@ import {
 	formatMs,
 	parsePlayingAsWikilink,
 	getFile,
+	showError,
 } from "src/utils";
 import { updateTrackFrontmatter } from "./SpotifyLogger";
 
 const clientId = "44e32ffa3b9c46398637431d6808481d";
 const redirectUri = "obsidian://spotify-auth";
 const scope = "user-read-currently-playing user-read-recently-played";
+const codeVerifier = generateRandomString(64);
 
-const codeVerifier = generateRandomString(64); // TODO: where to put this
 window.localStorage.setItem("code_verifier", codeVerifier);
 
 export const getAuthUrl = async () => {
 	const authUrl = new URL("https://accounts.spotify.com/authorize");
 	const hashed = await sha256(codeVerifier);
 	const codeChallenge = base64encode(hashed);
-
 	const params = {
 		response_type: "code",
 		client_id: clientId,
@@ -58,12 +58,6 @@ const setTokens = (
 ) => {
 	const expiration = Date.now() + expiresIn * 1000; // expiresIn is in seconds from now
 	localStorage.setItem("expires_in", expiration.toString());
-	console.log(
-		`setting new expiration date to: ${new Date(
-			expiration,
-		).toLocaleString()}`,
-	);
-
 	localStorage.setItem("access_token", accessToken);
 	if (refreshToken) {
 		localStorage.setItem("refresh_token", refreshToken);
@@ -73,14 +67,12 @@ const setTokens = (
 // exchange auth code for access token
 export const requestToken = async (code: string) => {
 	const codeVerifier = localStorage.getItem("code_verifier");
-
 	if (!codeVerifier) {
 		console.log("Error: code verifier not found");
 		return null;
 	}
 
 	const url = "https://accounts.spotify.com/api/token";
-
 	const payload = {
 		method: "POST",
 		headers: {
@@ -94,27 +86,26 @@ export const requestToken = async (code: string) => {
 			code_verifier: codeVerifier,
 		}),
 	};
-
 	const body = await fetch(url, payload);
-	const response = await body.json(); // TODO: error checking?
+	const response = await body.json();
+
 	setTokens(
 		response.access_token,
 		response.expires_in,
 		response.refresh_token,
 	);
+
 	return response;
 };
 
 const refreshTokens = async () => {
 	const refreshToken = localStorage.getItem("refresh_token");
-
 	if (!refreshToken) {
 		console.log("Error: refresh token not found");
 		return null;
 	}
 
 	const url = "https://accounts.spotify.com/api/token";
-
 	const payload = {
 		method: "POST",
 		headers: {
@@ -140,7 +131,7 @@ const refreshTokens = async () => {
 
 export const handleAuth = async (data: ObsidianProtocolData) => {
 	if (data?.error) {
-		new Notice(`Error: ${data.error}`, 3000);
+		showError(data.error);
 		return;
 	}
 	const code = data.code;
@@ -149,28 +140,22 @@ export const handleAuth = async (data: ObsidianProtocolData) => {
 
 const getAccessToken = async () => {
 	const expirationString = window.localStorage.getItem("expires_in");
-
 	if (!expirationString) {
 		console.log("Error: could not get expires_in");
 		return null;
 	}
 
 	const expiration = parseInt(expirationString);
-
 	if (Date.now() >= expiration) {
-		console.log(
-			`requesting new token. old expiration date: ${new Date(
-				expiration,
-			).toLocaleString()}`,
-		);
 		await refreshTokens();
 	}
+
 	const token = window.localStorage.getItem("access_token");
 	return token;
 };
 
-// wanted to prevent a random api call to check authentication
-// will fail if user revokes permissions
+// to prevent checking authentication through api call
+// will fail if user revokes permissions via Spotify
 export const isAuthenticated = () => {
 	return (
 		window.localStorage.getItem("access_token") &&
@@ -178,85 +163,7 @@ export const isAuthenticated = () => {
 	);
 };
 
-export const getCurrentlyPlayingTrack = async () => {
-	if (!isAuthenticated()) {
-		throw new Error("Please connect your spotify account");
-	}
-
-	const accessToken = (await getAccessToken()) ?? "";
-
-	const response = await fetch(
-		"https://api.spotify.com/v1/me/player/currently-playing",
-		{
-			headers: {
-				Authorization: "Bearer " + accessToken,
-			},
-		},
-	);
-
-	if (response.status === 204) {
-		throw new Error("Playback not available or active");
-	}
-
-	const data = await response.json();
-
-	if (data.error) {
-		if (data.error.status === 400) {
-			throw new Error("Please connect your spotify account");
-		}
-		throw new Error(data.error.message);
-	}
-
-	return data;
-};
-
-export const getRecentlyPlayed = async () => {
-	const recentlyPlayedURL = new URL(
-		"https://api.spotify.com/v1/me/player/recently-played",
-	);
-	const data = await callEndpoint(recentlyPlayedURL.toString());
-	return data;
-};
-
-export const searchItem = async (query: string, type: PlayingType) => {
-	if (!isAuthenticated()) {
-		throw new Error("Please connect your spotify account");
-	}
-	if (!query) {
-		return null;
-	}
-
-	const accessToken = (await getAccessToken()) ?? "";
-
-	const searchURL = new URL("https://api.spotify.com/v1/search");
-
-	const params = {
-		q: query,
-		type: type.toLowerCase(),
-	};
-
-	searchURL.search = new URLSearchParams(params).toString();
-
-	const response = await fetch(searchURL.toString(), {
-		headers: {
-			Authorization: "Bearer " + accessToken,
-		},
-	});
-
-	const data = await response.json();
-
-	if (data.error) {
-		if (data.error.status === 400) {
-			throw new Error("Please connect your spotify account");
-		}
-		throw new Error(data.error.message);
-	}
-
-	return data;
-};
-
 export const callEndpoint = async (url: string) => {
-	//TODO: use in each api call
 	if (!isAuthenticated()) {
 		throw new Error("Please connect your spotify account");
 	}
@@ -270,14 +177,44 @@ export const callEndpoint = async (url: string) => {
 	});
 
 	const data = await response.json();
-
 	if (data.error) {
-		if (data.error.status === 400) {
+		if (data.error.status === 401) {
 			throw new Error("Please connect your spotify account");
 		}
 		throw new Error(data.error.message);
 	}
 
+	return data;
+};
+
+export const getCurrentlyPlayingTrack = async () => {
+	const data = await callEndpoint(
+		"https://api.spotify.com/v1/me/player/currently-playing",
+	);
+	return data;
+};
+
+export const getRecentlyPlayed = async () => {
+	const data = await callEndpoint(
+		"https://api.spotify.com/v1/me/player/recently-played",
+	);
+	return data;
+};
+
+export const searchItem = async (query: string, type: PlayingType) => {
+	if (!query) {
+		return null;
+	}
+
+	const searchURL = new URL("https://api.spotify.com/v1/search");
+	const params = {
+		q: query,
+		type: type.toLowerCase(),
+	};
+
+	searchURL.search = new URLSearchParams(params).toString();
+
+	const data = callEndpoint(searchURL.toString());
 	return data;
 };
 
@@ -291,7 +228,8 @@ export const tracksAsWikilinks = (
 	return tracks.map((track) => {
 		const trackFile = getFile(app, folderPath, track.id);
 		if (trackFile) {
-			updateTrackFrontmatter(app, trackFile, album); //maybe doing too much
+			// if this track was logged before, then link current album in that track's frontmatter[album]
+			updateTrackFrontmatter(app, trackFile, album);
 		} else if (!logAlbumAlwaysCreateNewTrackFiles) {
 			return track.name;
 		}
@@ -315,13 +253,21 @@ export const processCurrentlyPlayingResponse = async (
 	if (type === "Album") {
 		const albumLink = playbackState.item.album.href;
 		if (!albumLink) {
-			throw new Error("no album found for this track");
+			throw new Error("no album href found");
 		}
-		const album = await callEndpoint(playbackState.item.album.href);
+		const album = await callEndpoint(albumLink);
 		const albumInfo = processAlbum(album);
 		return albumInfo;
 	}
 	return null;
+};
+
+export const processRecentlyPlayed = (
+	recentlyPlayedTracksPage: RecentlyPlayedTracksPage,
+): TrackFormatted[] => {
+	return recentlyPlayedTracksPage.items.map((playHistory: PlayHistory) =>
+		processTrack(playHistory.track),
+	);
 };
 
 const formatArtists = (artists: SimplifiedArtist[]) => {
@@ -348,14 +294,6 @@ export const processTrack = (track: TrackLike): TrackFormatted => {
 		image: track.album.images[track.album.images.length - 1],
 		duration: formatMs(track.duration_ms),
 	};
-};
-
-export const processRecentlyPlayed = (
-	recentlyPlayedTracksPage: RecentlyPlayedTracksPage,
-): TrackFormatted[] => {
-	return recentlyPlayedTracksPage.items.map((playHistory: PlayHistory) =>
-		processTrack(playHistory.track),
-	);
 };
 
 export const processSimplifiedAlbum = (album: SimplifiedAlbum): MinimalItem => {
@@ -390,10 +328,4 @@ export const processAlbum = (album: Album): AlbumFormatted => {
 		),
 		duration: getAlbumLength(album),
 	};
-};
-
-export const nowPlayingAsString = (
-	playing: AlbumFormatted | TrackFormatted,
-) => {
-	return `${playing.artists} - ${playing.name}`;
 };

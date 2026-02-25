@@ -1,4 +1,4 @@
-export interface defaultSettings {
+export interface obsidianfmDefaultSettings {
 	folderPath: string;
 	logAlbumAlwaysCreateNewTrackFiles: boolean;
 	showType: boolean;
@@ -7,7 +7,7 @@ export interface defaultSettings {
 	showAlbumReleaseDate: boolean;
 }
 
-export const DEFAULT_SETTINGS: defaultSettings = {
+export const OBSIDIANFM_DEFAULT_SETTINGS: obsidianfmDefaultSettings = {
 	folderPath: "",
 	logAlbumAlwaysCreateNewTrackFiles: false,
 	showType: true,
