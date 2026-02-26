@@ -120,3 +120,13 @@ export const requireAuth = (fn: () => Promise<void>): (() => Promise<void>) => {
 		await fn();
 	};
 };
+
+// force Obsidian Front Matter Title to reload features, if installed
+export const reloadOFMT = (app: App) => {
+	const ofmtReloadID =
+		"obsidian-front-matter-title-plugin:ofmt-features-reload";
+
+	if (app.commands.findCommand(ofmtReloadID)) {
+		app.commands.executeCommandById(ofmtReloadID);
+	}
+};

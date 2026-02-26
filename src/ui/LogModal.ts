@@ -16,6 +16,7 @@ import {
 	generateBlockID,
 	nowPlayingAsString,
 	parsePlayingAsWikilink,
+	reloadOFMT,
 	requireAuth,
 	showError,
 } from "src/utils";
@@ -73,6 +74,10 @@ export class LogModal extends Modal {
 				undefined,
 				curTrackMdLink,
 			);
+
+			// without this, Obsidian Front Matter Title won't know new files
+			// were created since active leaf has not changed
+			reloadOFMT(this.app);
 		}
 	};
 
