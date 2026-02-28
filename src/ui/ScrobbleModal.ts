@@ -35,6 +35,7 @@ export class ScrobbleModal extends Modal {
 	};
 	private pendingItems: ItemFormatted[];
 	private updateFiles = async () => {
+		this.blockId = generateBlockID(6);
 		while (this.pendingItems.length > 0) {
 			const item = this.pendingItems.pop()!;
 			let file: TFile;
@@ -46,8 +47,6 @@ export class ScrobbleModal extends Modal {
 			if (item.type === "Album") {
 				file = await createAlbumFile(this.app, this.settings, item);
 			}
-
-			this.blockId = generateBlockID(6);
 
 			const curBlockMdLink = parseItemAsWikilink(
 				this.item,
