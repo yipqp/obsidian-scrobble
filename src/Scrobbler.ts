@@ -7,6 +7,7 @@ import {
 	getFilePath,
 	itemAsString,
 	parseItemAsWikilink,
+	reloadOFMT,
 	showNotice,
 } from "./utils";
 import { scrobbleDefaultSettings } from "./settings";
@@ -232,6 +233,8 @@ export const scrobbleItem = async (
 				await createTrackFile(app, settings, track);
 			}
 		}
+
+		reloadOFMT(app);
 	}
 
 	const filePath = file!.path;
