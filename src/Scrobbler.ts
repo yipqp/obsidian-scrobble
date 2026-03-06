@@ -70,13 +70,13 @@ export const appendInput = async (
 	await app.vault.append(file, formattedinput);
 };
 
-export const updateTrackFrontmatter = (
+export const updateTrackFrontmatter = async (
 	app: App,
 	trackFile: TFile,
 	album: AlbumFormatted,
 ) => {
 	try {
-		app.fileManager.processFrontMatter(trackFile, (frontmatter) => {
+		await app.fileManager.processFrontMatter(trackFile, (frontmatter) => {
 			const albumWikilink = parseItemAsWikilink(album, false);
 			frontmatter["album"] = albumWikilink;
 		});
@@ -85,13 +85,13 @@ export const updateTrackFrontmatter = (
 	}
 };
 
-export const updateAlbumFrontmatter = (
+export const updateAlbumFrontmatter = async (
 	app: App,
 	albumFile: TFile,
 	track: TrackFormatted,
 ) => {
 	try {
-		app.fileManager.processFrontMatter(albumFile, (frontmatter) => {
+		await app.fileManager.processFrontMatter(albumFile, (frontmatter) => {
 			const tracks = frontmatter["tracks"];
 			const trackName = track.name;
 			const trackWikilink = parseItemAsWikilink(track, false);
@@ -121,7 +121,7 @@ const createFile = async (
 	file = await app.vault.create(filePath, "");
 
 	try {
-		app.fileManager.processFrontMatter(file, (frontmatter) => {
+		await app.fileManager.processFrontMatter(file, (frontmatter) => {
 			setFrontmatter(frontmatter);
 		});
 	} catch (e) {
@@ -146,6 +146,14 @@ export const createAlbumFile = async (
 		aliasShowArtists,
 	} = settings;
 
+	const tracksFrontmatter = await tracksAsWikilinks(
+		app,
+		settings,
+		folderPath,
+		album.tracks,
+		album,
+	);
+
 	return createFile(app, settings, album.id, (frontmatter) => {
 		// use https://github.com/snezhig/obsidian-front-matter-title to display
 		// frontmatter["name"] as the filename
@@ -155,13 +163,7 @@ export const createAlbumFile = async (
 		showAlbumReleaseDate &&
 			(frontmatter["release date"] = album.releaseDate);
 		showDuration && (frontmatter["duration"] = album.duration);
-		frontmatter["tracks"] = tracksAsWikilinks(
-			app,
-			settings,
-			folderPath,
-			album.tracks,
-			album,
-		);
+		frontmatter["tracks"] = tracksFrontmatter;
 		showTags && (frontmatter["tags"] = "");
 		frontmatter["aliases"] = itemAsString(album, aliasShowArtists);
 	});
@@ -191,7 +193,7 @@ export const createTrackFile = async (
 	const albumFile = getFile(app, folderPath, track.albumid);
 	if (albumFile) {
 		albumWikilink = `[[${track.albumid}|${track.album}]]`;
-		updateAlbumFrontmatter(app, albumFile, track);
+		await updateAlbumFrontmatter(app, albumFile, track);
 	}
 
 	return createFile(app, settings, track.id, (frontmatter) => {

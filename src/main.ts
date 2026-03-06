@@ -12,7 +12,7 @@ export default class Scrobble extends Plugin {
 		this.registerObsidianProtocolHandler(
 			"scrobble-spotify-auth",
 			async (e) => {
-				handleAuth(e);
+				await handleAuth(e);
 			},
 		);
 		registerCommands(this);

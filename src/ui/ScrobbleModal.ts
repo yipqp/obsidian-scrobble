@@ -150,10 +150,10 @@ export class ScrobbleModal extends Modal {
 
 		const textComponent = new TextComponent(this.contentEl);
 		textComponent.inputEl.addClass("scrobble-modal-input");
-		textComponent.inputEl.addEventListener("keydown", async (event) => {
+		textComponent.inputEl.addEventListener("keydown", (event) => {
 			if (!event.isComposing && event.key === "Enter") {
 				event.preventDefault();
-				this.handleSubmit();
+				void this.handleSubmit();
 			}
 		});
 
