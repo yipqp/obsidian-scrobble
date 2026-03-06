@@ -1,6 +1,6 @@
 // pkce reference: https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow
 
-import { App, ObsidianProtocolData } from "obsidian";
+import { App, ObsidianProtocolData, requestUrl } from "obsidian";
 import {
 	Album,
 	AlbumFormatted,
@@ -172,17 +172,19 @@ export const callEndpoint = async (url: string) => {
 
 	const accessToken = (await getAccessToken()) ?? "";
 
-	const response = await fetch(url, {
+	const response = await requestUrl({
+		url: url,
 		headers: {
 			Authorization: "Bearer " + accessToken,
 		},
+		throw: false,
 	});
 
 	if (response.status === 204) {
 		throw new Error("No currently playing track");
 	}
 
-	const data = await response.json();
+	const data = response.json;
 
 	if (data.error) {
 		if (data.error.status === 401) {
@@ -232,17 +234,19 @@ export const tracksAsWikilinks = (
 	tracks: SimplifiedTrack[] | TrackFormatted[],
 	album: AlbumFormatted,
 ) => {
-	return tracks.map((track) => {
-		const trackFile = getFile(app, folderPath, track.id);
-		if (trackFile) {
-			// if this track was scrobbled before, then link current album in that track's frontmatter[album]
-			updateTrackFrontmatter(app, trackFile, album);
-		} else if (!settings.scrobbleAlbumAlwaysCreatesNewTrackFiles) {
-			return track.name;
-		}
+	return Promise.all(
+		tracks.map(async (track) => {
+			const trackFile = getFile(app, folderPath, track.id);
+			if (trackFile) {
+				// if this track was scrobbled before, then link current album in that track's frontmatter[album]
+				await updateTrackFrontmatter(app, trackFile, album);
+			} else if (!settings.scrobbleAlbumAlwaysCreatesNewTrackFiles) {
+				return track.name;
+			}
 
-		return parseItemAsWikilink(track, false);
-	});
+			return parseItemAsWikilink(track, false);
+		}),
+	);
 };
 
 export const processCurrentlyPlayingResponse = async (
